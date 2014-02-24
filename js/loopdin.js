@@ -25,14 +25,7 @@ $(function() {
       if (!newProject.get("status")) {
         newProject.set({"status": newProject.defaults.status});
       }
-      newProject.save(null, {
-        success: function(newProject) {
-          alert(newProject.get("title") + ' has been created');
-        },
-        error: function(newProject, error) {
-          alert(newProject.get("title") + ' failed to save because ' + error.description);
-        }
-      });
+      newProject.set({"user": Parse.User.current()});
     },
   });
 
@@ -43,25 +36,29 @@ $(function() {
   });
 
   var ProjectsList = Parse.Collection.extend({
-
     model: Project,
+
+    all: function() {
+      var query = new Parse.Query(Project);
+      return query.equalTo("user", Parse.User.current());
+    },
 
     active: function() {
       var query = new Parse.Query(Project);
       query.equalTo("user", Parse.User.current());
-      query.equalTo("status", "active");
+      return query.equalTo("status", "active");
     },
 
     submitted: function() {
       var query = new Parse.Query(Project);
       query.equalTo("user", Parse.User.current());
-      query.equalTo("status", "submitted");
+      return query.equalTo("status", "submitted");
     },
 
     approved: function() {
       var query = new Parse.Query(Project);
       query.equalTo("user", Parse.User.current());
-      query.equalTo("status", "approved");
+      return query.equalTo("status", "approved");
     },
 
   });
@@ -71,24 +68,66 @@ $(function() {
 
     events: {
       "click .log-out": "logOut",
+      "submit form.new-project-form": "createProject",
     },
 
     initialize: function() {
-      _.bindAll(this, "logOut");
+      this.projects = new ProjectsList;
+      this.projects.query = new Parse.Query(Project);
+      this.projects.query.equalTo("user", Parse.User.current());
+      _.bindAll(this, "logOut", "createProject", "addOne", "addAll");
       this.render();
     },
 
-    logOut: function(e) {
+    logOut: function() {
       Parse.User.logOut();
       new LogInView();
       this.undelegateEvents();
       delete this;
     },
 
+    addOne: function(project) {
+      var view = new ProjectView({model: project});
+      this.$("#project-list").append(view.render().el);
+    },
+
+    addAll: function(collection, filter) {
+      this.$("#project-list").html("");
+      this.projects.each(this.addOne);
+    },
+
+    createProject: function() {
+      var self = this;
+      console.log(this);
+
+      this.projects.create({
+        title:       this.$("#new-project-title").val(),
+        description: this.$("#new-project-description").val(),
+      });
+
+    },
+
     render: function() {
       this.$el.html(_.template($("#manage-projects-template").html()));
+      this.addAll();
       this.delegateEvents();
     }
+  });
+
+  var ProjectView = Parse.View.extend({
+    tagName: "li",
+
+    template: _.template($('#project-template').html()),
+
+    initialize: function() {
+      _.bindAll(this, 'render');
+    },
+
+    render: function() {
+      $(this.el).html(this.template(this.model.toJSON()));
+      this.input = this.$('.edit');
+      return this;
+    },
   });
 
   var LogInView = Parse.View.extend({
@@ -199,6 +238,38 @@ $(function() {
     }
   });
 
+  var AppRouter = Parse.Router.extend({
+    routes: {
+      "all": "all",
+      "active": "active",
+      "submitted": "submitted"
+    },
+
+    initialize: function(options) {
+    },
+
+    all: function() {
+      state.set({ filter: "all" });
+    },
+
+    active: function() {
+      state.set({ filter: "active" });
+    },
+
+    submitted: function() {
+      state.set({ filter: "submitted" });
+    },
+
+    approved: function() {
+      state.set({ filter: "approved" });
+    }
+  });
+
+  var state = new AppState;
+
+  new AppRouter;
+
+  var state = new AppState
   new AppView;
 
 });

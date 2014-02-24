@@ -50,7 +50,23 @@
 
   <script type="text/template" id="manage-projects-template">
     <h1>hey there <%= Parse.User.current().get("username") %></h1> <a href="#" class="log-out">Log out</a>
-    <a href="#" class="new-project">+ Project</a> 
+    <form class="new-project-form">
+      <h2>+ Project</h2>
+      <div class="error" style="display:none"></div>
+      <input type="text" id="new-project-title" placeholder="title" />
+      <input type="text" id="new-project-description" placeholder="description" />
+      <button>Add Project</button>
+    </form>
+
+    <ul class="projects">
+    </ul>
+  </script>
+
+  <script type="text/template" id="project-template">
+    <li class="<%= status %>">
+      <h2><%= title %></h2>
+      <p><%= description %></p>
+    </li>
   </script>
 
 </body>
