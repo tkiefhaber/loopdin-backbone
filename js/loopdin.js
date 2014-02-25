@@ -73,10 +73,10 @@ $(function() {
 
     initialize: function() {
       this.projects = new ProjectsList;
-      this.projects.query = new Parse.Query(Project);
-      this.projects.query.equalTo("user", Parse.User.current());
+      this.projects.query = this.projects.all();
+      var self = this;
+      this.projects.fetch({success: function(){self.render()}});
       _.bindAll(this, "logOut", "createProject", "addOne", "addAll");
-      this.render();
     },
 
     logOut: function() {
@@ -91,19 +91,20 @@ $(function() {
       this.$("#project-list").append(view.render().el);
     },
 
-    addAll: function(collection, filter) {
+    addAll: function() {
       this.$("#project-list").html("");
       this.projects.each(this.addOne);
     },
 
     createProject: function() {
       var self = this;
-      console.log(this);
 
       this.projects.create({
         title:       this.$("#new-project-title").val(),
         description: this.$("#new-project-description").val(),
       });
+
+      this.render();
 
     },
 
