@@ -29,9 +29,21 @@ $(function() {
     },
   });
 
-  var AppState = Parse.Object.extend("AppState", {
+  var Version = Parse.Object.extend("Version", {
     defaults: {
-      filter: "all"
+      title: "newest version",
+      status: "active",
+    },
+
+    initialize: function(project) {
+      newVersion = this
+      if (!newProject.get("title")) {
+        newVersion.set({"title": newVersion.defaults.title});
+      }
+      if (!newVersion.get("status")) {
+        newVersion.set({"status": newVersion.defaults.status});
+      }
+      newVersion.set("parent", project);
     }
   });
 
@@ -63,11 +75,40 @@ $(function() {
 
   });
 
+  var VersionsList = Parse.Collection.extend({
+    model: Version,
+
+    all: function(project) {
+      var query = new Parse.Query(Version);
+      return query.equalTo("project", project);
+    },
+// 
+//     active: function() {
+//       var query = new Parse.Query(Project);
+//       query.equalTo("user", Parse.User.current());
+//       return query.equalTo("status", "active");
+//     },
+// 
+//     submitted: function() {
+//       var query = new Parse.Query(Project);
+//       query.equalTo("user", Parse.User.current());
+//       return query.equalTo("status", "submitted");
+//     },
+// 
+//     approved: function() {
+//       var query = new Parse.Query(Project);
+//       query.equalTo("user", Parse.User.current());
+//       return query.equalTo("status", "approved");
+//     },
+// 
+  });
+
   var ManageProjectsView = Parse.View.extend({
     el: ".content",
 
     events: {
       "click .log-out": "logOut",
+      "click .project-link": "goToProject",
       "submit form.new-project-form": "createProject",
     },
 
@@ -75,8 +116,12 @@ $(function() {
       this.projects = new ProjectsList;
       this.projects.query = this.projects.all();
       var self = this;
-      this.projects.fetch({success: function(){self.render()}});
-      _.bindAll(this, "logOut", "createProject", "addOne", "addAll");
+      this.projects.fetch({
+        success: function(){
+          self.render()
+        }
+      });
+      _.bindAll(this, "logOut", "createProject", "addOne", "addAll", "goToProject");
     },
 
     logOut: function() {
@@ -87,7 +132,7 @@ $(function() {
     },
 
     addOne: function(project) {
-      var view = new ProjectView({model: project});
+      var view = new ProjectListView({model: project});
       this.$("#project-list").append(view.render().el);
     },
 
@@ -108,6 +153,11 @@ $(function() {
 
     },
 
+    goToProject: function(project) {
+      var view = new ProjectView({model: project});
+      view.render();
+    },
+
     render: function() {
       this.$el.html(_.template($("#manage-projects-template").html()));
       this.addAll();
@@ -116,9 +166,57 @@ $(function() {
   });
 
   var ProjectView = Parse.View.extend({
+    el: ".content",
+
+    template: _.template($('#project-view-template').html()),
+
+    initilize: function() {
+      this.versions = new VersionList;
+      this.versions.query = this.versions.all();
+      var self = this;
+      this.versions.fetch({
+        success: function(){
+          self.render()
+        }
+      });
+      _.bindAll(this, "createVersion", "addOne", "addAll");
+    },
+
+    addOne: function(version) {
+      var view = new VersionView({model: version});
+      this.$("#version-list").append(view.render().el);
+    },
+
+    addAll: function() {
+      this.$("#version-list").html("");
+      this.versions = new VersionsList;
+      this.versions.query = this.versions.all();
+      this.versions.each(this.addOne);
+    },
+
+    createVersion: function() {
+      var self = this;
+
+      this.versions.create({
+        title:       this.$("#new-version-title").val(),
+        description: this.$("#new-version-description").val(),
+      });
+
+      this.render();
+
+    },
+
+    render: function() {
+      this.$el.html(_.template($("#project-view-template").html()));
+      this.addAll();
+      this.delegateEvents();
+    }
+  });
+
+  var ProjectListView = Parse.View.extend({
     tagName: "li",
 
-    template: _.template($('#project-template').html()),
+    template: _.template($('#project-li-template').html()),
 
     initialize: function() {
       _.bindAll(this, 'render');
@@ -239,36 +337,11 @@ $(function() {
     }
   });
 
-  var AppRouter = Parse.Router.extend({
-    routes: {
-      "all": "all",
-      "active": "active",
-      "submitted": "submitted"
-    },
-
-    initialize: function(options) {
-    },
-
-    all: function() {
-      state.set({ filter: "all" });
-    },
-
-    active: function() {
-      state.set({ filter: "active" });
-    },
-
-    submitted: function() {
-      state.set({ filter: "submitted" });
-    },
-
-    approved: function() {
-      state.set({ filter: "approved" });
+  var AppState = Parse.Object.extend("AppState", {
+    defaults: {
+      filter: "all"
     }
   });
-
-  var state = new AppState;
-
-  new AppRouter;
 
   var state = new AppState
   new AppView;

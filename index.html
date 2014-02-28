@@ -59,16 +59,22 @@
     </form>
 
     <ul id="project-list">
+      <img src='images/spinner.gif' class='spinner' />
     </ul>
   </script>
 
-  <script type="text/template" id="project-template">
+  <script type="text/template" id="project-li-template">
     <li class="<%= status %>">
-      <h2><%= title %></h2>
+      <a  href=# class="project-link"><h3><%= title %></h3></a>
       <p><%= description %></p>
     </li>
   </script>
 
+  <script type="text/template" id="project-view-template">
+    hello
+    <h3><%= title %></h3></a>
+    <p><%= description %></p>
+  </script>
 </body>
 
 </html>
