@@ -65,15 +65,26 @@
 
   <script type="text/template" id="project-li-template">
     <li class="<%= status %>">
-      <a  href=# class="project-link"><h3><%= title %></h3></a>
+    <a  href=# class="project-link" id="<%= objectId %>"><h3><%= title %></h3></a>
       <p><%= description %></p>
     </li>
   </script>
 
   <script type="text/template" id="project-view-template">
-    hello
     <h3><%= title %></h3></a>
     <p><%= description %></p>
+    <form class="new-version-form">
+      <h2>+ Version</h2>
+      <div class="error" style="display:none"></div>
+      <input type="text" id="new-version-title" placeholder="title" />
+      <input type="text" id="new-version-description" placeholder="description" />
+      <button>Add Version</button>
+    </form>
+
+
+    <ul id="versions-list">
+      <img src='images/spinner.gif' class='spinner' />
+    </ul>
   </script>
 </body>
 

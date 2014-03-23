@@ -52,25 +52,25 @@ $(function() {
 
     all: function() {
       var query = new Parse.Query(Project);
-      return query.equalTo("user", Parse.User.current());
+      return query.equalTo("user", Parse.User.current()).descending('createdAt');
     },
 
     active: function() {
       var query = new Parse.Query(Project);
       query.equalTo("user", Parse.User.current());
-      return query.equalTo("status", "active");
+      return query.equalTo("status", "active").descending('createdAt');
     },
 
     submitted: function() {
       var query = new Parse.Query(Project);
       query.equalTo("user", Parse.User.current());
-      return query.equalTo("status", "submitted");
+      return query.equalTo("status", "submitted").descending('createdAt');
     },
 
     approved: function() {
       var query = new Parse.Query(Project);
       query.equalTo("user", Parse.User.current());
-      return query.equalTo("status", "approved");
+      return query.equalTo("status", "approved").descending('createdAt');
     },
 
   });
@@ -80,27 +80,13 @@ $(function() {
 
     all: function(project) {
       var query = new Parse.Query(Version);
-      return query.equalTo("project", project);
+      query.equalTo("parent", project).descending('createdAt');
+      query.find({
+        success: function(results) {
+          return results;
+        },
+      });
     },
-// 
-//     active: function() {
-//       var query = new Parse.Query(Project);
-//       query.equalTo("user", Parse.User.current());
-//       return query.equalTo("status", "active");
-//     },
-// 
-//     submitted: function() {
-//       var query = new Parse.Query(Project);
-//       query.equalTo("user", Parse.User.current());
-//       return query.equalTo("status", "submitted");
-//     },
-// 
-//     approved: function() {
-//       var query = new Parse.Query(Project);
-//       query.equalTo("user", Parse.User.current());
-//       return query.equalTo("status", "approved");
-//     },
-// 
   });
 
   var ManageProjectsView = Parse.View.extend({
@@ -142,7 +128,6 @@ $(function() {
     },
 
     createProject: function() {
-      var self = this;
 
       this.projects.create({
         title:       this.$("#new-project-title").val(),
@@ -153,9 +138,17 @@ $(function() {
 
     },
 
-    goToProject: function(project) {
-      var view = new ProjectView({model: project});
-      view.render();
+    goToProject: function(e) {
+      var query = new Parse.Query('Project');
+      query.get(e.currentTarget.id, {
+        success: function(result) {
+          var view = new ProjectView({model: result});
+          view.render();
+        },
+        error: function(error){
+          alert("Error" + " " + error.message);
+        }
+      });
     },
 
     render: function() {
@@ -170,15 +163,11 @@ $(function() {
 
     template: _.template($('#project-view-template').html()),
 
+    events: {
+      "submit form.new-version-form": "createVersion",
+    },
+
     initilize: function() {
-      this.versions = new VersionList;
-      this.versions.query = this.versions.all();
-      var self = this;
-      this.versions.fetch({
-        success: function(){
-          self.render()
-        }
-      });
       _.bindAll(this, "createVersion", "addOne", "addAll");
     },
 
@@ -188,18 +177,18 @@ $(function() {
     },
 
     addAll: function() {
-      this.$("#version-list").html("");
+      this.$("#versions-list").html("");
       this.versions = new VersionsList;
-      this.versions.query = this.versions.all();
+      this.versions.query = this.versions.all(this.model);
       this.versions.each(this.addOne);
     },
 
     createVersion: function() {
-      var self = this;
 
       this.versions.create({
         title:       this.$("#new-version-title").val(),
         description: this.$("#new-version-description").val(),
+        parent:      this.model.parent
       });
 
       this.render();
@@ -207,7 +196,7 @@ $(function() {
     },
 
     render: function() {
-      this.$el.html(_.template($("#project-view-template").html()));
+      this.$el.html(_.template($("#project-view-template").html(), this.model.toJSON()));
       this.addAll();
       this.delegateEvents();
     }
